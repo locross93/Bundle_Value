@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\app\mainwindow.py", line 3718, in main
+    mainwindow = run_spyder(app, options, args)
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\app\mainwindow.py", line 3557, in run_spyder
+    main = MainWindow(options)
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\app\mainwindow.py", line 426, in __init__
+    from spyder.preferences.runconfig import RunConfigPage
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\preferences\runconfig.py", line 482, in <module>
+    class RunConfigPage(GeneralConfigPage):
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\preferences\runconfig.py", line 487, in RunConfigPage
+    ICON = ima.icon('run')
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\spyder\utils\icon_manager.py", line 394, in icon
+    directory=_resource['directory'])
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\qtawesome\__init__.py", line 178, in load_font
+    return _instance().load_font(prefix, ttf_filename, charmap_filename, directory)
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\qtawesome\__init__.py", line 54, in _instance
+    'materialdesignicons-webfont-charmap.json')
+  File "C:\Users\locro\Anaconda3\envs\python2\lib\site-packages\qtawesome\iconic_font.py", line 206, in __init__
+    super().__init__()
+TypeError: super() takes at least 1 argument (0 given)
