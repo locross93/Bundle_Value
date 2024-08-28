@@ -78,20 +78,18 @@ def nonlinear_rsa_regression(temp_fmri, partial_dsms, target_dsm, num_params):
     coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, result.params['a3'].value, result.params['a4'].value]
     
     return bic, adj_r2, coefs
-
-
-def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, btwn_day_inds=None):
-    # Combine all regressor data
-    model_dsms = partial_dsms + [abs_value]
     
+
+def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, trial_type_inds, btwn_day_inds=None):
+
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma):
-        values = model_dsms[-1]
-        partial_dsms = model_dsms[:-1]
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, abs_value, partial_dsms):
+        norm_values = np.zeros(len(abs_value))
         
-        #divisively normalize values in last column        
-        avg_value = np.mean(values)
-        norm_values = values.astype(float) / (sigma + avg_value)
+        # Divisively normalize values
+        for trial_inds in trial_type_inds:
+            avg_value = np.mean(abs_value[trial_inds])
+            norm_values[trial_inds] = abs_value[trial_inds] / (sigma + avg_value)
         
         ds_value = dataset_wizard(norm_values, targets=np.zeros(len(norm_values)))
         dsm = PDist(pairwise_metric='euclidean', square=square_dsm_bool)
@@ -102,16 +100,18 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, bt
         else:
             value_dsm = value_dsm.samples.reshape(-1)
             
-        if remove_within_day:
+        if remove_within_day and btwn_day_inds is not None:
             value_dsm = value_dsm[btwn_day_inds]
         
-        model_dsms = partial_dsms + [value_dsm]
-        x = np.column_stack(model_dsms)
+        # transpose partial_dsms
+        partial_dsms = partial_dsms.T
+        # concatenate partial_dsms with value_dsm by column
+        x = np.column_stack((partial_dsms, value_dsm))
         
         return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] 
     
     # Create the LMfit model
-    lmfit_model = Model(nonlinear_model_sigma)
+    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
     
     # Set up parameters with initial guesses
     params = Parameters()
@@ -120,13 +120,13 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, bt
     params.add('a2', value=1)
     params.add('a3', value=1)
     params.add('a4', value=1)
-    params.add('sigma', value=0)
+    params.add('sigma', value=0, min=0)  # sigma should be non-negative
     
     # Fit the model
-    result = lmfit_model.fit(temp_fmri, params, x=model_dsms)
+    result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
+                             abs_value=abs_value, partial_dsms=partial_dsms)
     
     # Calculate statistics
-    #bic = statsmodels.tools.eval_measures.bic(result.chisqr, nobs, df_modelwc)
     bic = result.bic
     
     # Calculate adjusted R-squared
@@ -137,7 +137,8 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, bt
     r_squared = 1 - (ss_residual / ss_total)
     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
     
-    coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, result.params['a3'].value, result.params['a4'].value]
+    coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, 
+             result.params['a3'].value, result.params['a4'].value, result.params['sigma'].value]
     
     return bic, adj_r2, coefs
 
@@ -280,4 +281,5 @@ for subj in subj_list:
             btwn_day_inds = None
         linear_tval, linear_bic, linear_adj_r2, linear_coefs = rsa_regression(temp_fmri, partial_dsms, temp_model, num_params)
         nonlinear_bic, nonlinear_adj_r2, nonlinear_coefs = nonlinear_rsa_regression(temp_fmri, partial_dsms, temp_model, num_params)
-        sigma_bic, sigma_adj_r2, sigma_coefs = nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, btwn_day_inds)
+        trial_type_inds = [sitem_inds, bundle_inds]
+        sigma_bic, sigma_adj_r2, sigma_coefs = nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, num_params, trial_type_inds, btwn_day_inds)
