@@ -36,11 +36,11 @@ def compute_divisive_norm(values, beta, sigma):
     return div_normed_values
 
 # remove beta
-# def compute_divisive_norm(values, sigma):
-#     avg_value = np.mean(values)
-#     div_normed_values = values.astype(float) / (sigma + avg_value)
+ def compute_divisive_norm(values, sigma):
+     avg_value = np.mean(values)
+     div_normed_values = values.astype(float) / (sigma + avg_value)
     
-#     return div_normed_values
+     return div_normed_values
 
 def compute_divisive_norm2(values, sigma, w):
     #avg_value = np.mean(values)
