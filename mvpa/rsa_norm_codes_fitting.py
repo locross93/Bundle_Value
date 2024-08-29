@@ -15,6 +15,8 @@ import pandas as pd
 
 import os
 import json
+
+import pdb
     
 
 def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds=None):
@@ -74,17 +76,19 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
     ss_residual = np.sum(result.residual**2)
     r_squared = 1 - (ss_residual / ss_total)
     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
+
+    fit_dict = {'bic': bic, 'adj_r2': adj_r2, 
+                    'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+                    'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+                    'a4': result.params['a4'].value, 'sigma': result.params['sigma'].value}
     
-    coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, 
-             result.params['a3'].value, result.params['a4'].value, result.params['sigma'].value]
-    
-    return bic, adj_r2, coefs
+    return fit_dict
 
 
 def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=None):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, w, abs_value, partial_dsms):
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, abs_value, partial_dsms):
 
         # Divisively normalize values
         norm_values = abs_value / (sigma + abs_value*w)
@@ -106,7 +110,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
         # concatenate partial_dsms with value_dsm by column
         x = np.column_stack((partial_dsms, value_dsm))
         
-        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] 
+        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3]  
     
     # Create the LMfit model
     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
@@ -117,7 +121,6 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
     params.add('a1', value=1)
     params.add('a2', value=1)
     params.add('a3', value=1)
-    params.add('a4', value=1)
     params.add('sigma', value=5, min=0)  # sigma should be non-negative
     params.add('w', value=1, min=0)  # w should be non-negative
     
@@ -136,17 +139,19 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
     ss_residual = np.sum(result.residual**2)
     r_squared = 1 - (ss_residual / ss_total)
     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
+
+    fit_dict = {'bic': bic, 'adj_r2': adj_r2,
+                    'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+                    'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+                    'sigma': result.params['sigma'].value, 'w': result.params['w'].value}
     
-    coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, 
-             result.params['a3'].value, result.params['a4'].value, result.params['sigma'].value]
-    
-    return bic, adj_r2, coefs
+    return fit_dict
 
 
 def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=None):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, abs_value, partial_dsms):
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, abs_value, partial_dsms):
 
         # Divisively normalize values
         norm_values = abs_value / sigma 
@@ -168,7 +173,7 @@ def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=N
         # concatenate partial_dsms with value_dsm by column
         x = np.column_stack((partial_dsms, value_dsm))
         
-        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] 
+        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3] 
     
     # Create the LMfit model
     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
@@ -179,7 +184,6 @@ def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=N
     params.add('a1', value=1)
     params.add('a2', value=1)
     params.add('a3', value=1)
-    params.add('a4', value=1)
     params.add('sigma', value=5, min=0)  # sigma should be non-negative
     
     # Fit the model
@@ -198,10 +202,12 @@ def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=N
     r_squared = 1 - (ss_residual / ss_total)
     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
     
-    coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, 
-             result.params['a3'].value, result.params['a4'].value, result.params['sigma'].value]
+    fit_dict = {'bic': bic, 'adj_r2': adj_r2,
+                    'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+                    'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+                    'sigma': result.params['sigma'].value}
     
-    return bic, adj_r2, coefs
+    return fit_dict
 
 
 def plot_multi_mask_normalization_comparison(subj, results_dict, mask_names):
@@ -212,7 +218,7 @@ def plot_multi_mask_normalization_comparison(subj, results_dict, mask_names):
             data.append({
                 'Mask': mask,
                 'Normalization': norm_type,
-                'Adjusted R2': results[1]
+                'Adjusted R2': results['adj_r2']
             })
     
     df = pd.DataFrame(data)
@@ -265,7 +271,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-#subj_list = ['104']
+subj_list = ['104']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 

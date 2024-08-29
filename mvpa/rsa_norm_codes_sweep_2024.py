@@ -36,11 +36,11 @@ def compute_divisive_norm(values, beta, sigma):
     return div_normed_values
 
 # remove beta
- def compute_divisive_norm(values, sigma):
-     avg_value = np.mean(values)
-     div_normed_values = values.astype(float) / (sigma + avg_value)
-    
-     return div_normed_values
+# def compute_divisive_norm(values, sigma):
+#     avg_value = np.mean(values)
+#     div_normed_values = values.astype(float) / (sigma + avg_value)
+#    
+#     return div_normed_values
 
 def compute_divisive_norm2(values, sigma, w):
     #avg_value = np.mean(values)
@@ -195,21 +195,21 @@ model_labels = ['MC', 'MC by day', 'RW Update', 'RW Update by day']
 xaxis_labels = model_labels
 
 ## divisive
-param_grid = {'model': ['Divisive'], 'beta': [0, 0.1, 0.5, 1, 2, 3, 5, 10, 100, 1000], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
+param_grid = {'model': ['Divisive'], 'beta': [0], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
 params_sweep = list(ParameterGrid(param_grid))
 
 model_labels = ['Divisive']
 xaxis_labels = ['Advanced Fractional Model']
 
 ## range norm and divisive norm
-param_grid1 = {'model': ['Range'], 'beta': [0, 0.1, 0.5, 1, 2, 3, 5, 10, 100, 1000], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
-params_sweep1 = list(ParameterGrid(param_grid1))
-param_grid2 = {'model': ['Divisive'], 'beta': [0, 0.1, 0.5, 1, 2, 3, 5, 10, 100, 1000], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
-params_sweep2 = list(ParameterGrid(param_grid2))
-params_sweep = params_sweep1 + params_sweep2
-
-model_labels = ['Range', 'Divisive']
-xaxis_labels = model_labels
+#param_grid1 = {'model': ['Range'], 'beta': [0, 0.1, 0.5, 1, 2, 3, 5, 10, 100, 1000], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
+#params_sweep1 = list(ParameterGrid(param_grid1))
+#param_grid2 = {'model': ['Divisive'], 'beta': [0, 0.1, 0.5, 1, 2, 3, 5, 10, 100, 1000], 'sigma': [0, 0.1, 0.3, 0.4, 1, 2, 3, 5, 10, 100]}
+#params_sweep2 = list(ParameterGrid(param_grid2))
+#params_sweep = params_sweep1 + params_sweep2
+#
+#model_labels = ['Range', 'Divisive']
+#xaxis_labels = model_labels
 
 
 ##############
