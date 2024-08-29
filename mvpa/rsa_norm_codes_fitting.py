@@ -270,7 +270,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-subj_list = ['104']
+#subj_list = ['104']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
