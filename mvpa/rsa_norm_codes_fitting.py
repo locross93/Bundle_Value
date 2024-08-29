@@ -9,7 +9,6 @@ import numpy as np
 import time
 from lmfit import Model, Parameters
 import statsmodels.api as sm
-import statsmodels.tools.eval_measures
 import seaborn as sns
 import pandas as pd
 
