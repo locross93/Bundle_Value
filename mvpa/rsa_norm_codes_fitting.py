@@ -84,7 +84,7 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
 def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=None):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, w, abs_value, partial_dsms):
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, abs_value, partial_dsms):
 
         # Divisively normalize values
         norm_values = abs_value / (sigma + abs_value*w)
@@ -106,7 +106,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
         # concatenate partial_dsms with value_dsm by column
         x = np.column_stack((partial_dsms, value_dsm))
         
-        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] 
+        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3] 
     
     # Create the LMfit model
     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
@@ -117,7 +117,6 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
     params.add('a1', value=1)
     params.add('a2', value=1)
     params.add('a3', value=1)
-    params.add('a4', value=1)
     params.add('sigma', value=5, min=0)  # sigma should be non-negative
     params.add('w', value=1, min=0)  # w should be non-negative
     
@@ -138,7 +137,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
     
     coefs = [result.params['a0'].value, result.params['a1'].value, result.params['a2'].value, 
-             result.params['a3'].value, result.params['a4'].value, result.params['sigma'].value]
+             result.params['a3'].value, result.params['sigma'].value], result.params['w'].value
     
     return bic, adj_r2, coefs
 
