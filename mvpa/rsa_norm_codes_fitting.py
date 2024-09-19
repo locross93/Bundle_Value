@@ -1,16 +1,17 @@
-from mvpa2.suite import *
+#from mvpa2.suite import *
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, "/Users/locro/Documents/Bundle_Value/mvpa/")
 import os
 os.chdir("/Users/locro/Documents/Bundle_Value/mvpa/")
-import mvpa_utils 
+#import mvpa_utils 
 import numpy as np
 import time
 from lmfit import Model, Parameters
 import statsmodels.api as sm
 import seaborn as sns
 import pandas as pd
+from scipy.spatial.distance import pdist
 
 import os
 import json
@@ -18,7 +19,7 @@ import json
 import pdb
     
 
-def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds=None):
+def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds, item1_value, item2_value):
 
     # Define the nonlinear model function
     def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, abs_value, partial_dsms):
@@ -29,14 +30,11 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
             avg_value = np.mean(abs_value[trial_inds])
             norm_values[trial_inds] = abs_value[trial_inds] / (sigma + avg_value)
         
-        ds_value = dataset_wizard(norm_values, targets=np.zeros(len(norm_values)))
-        dsm = PDist(pairwise_metric='euclidean', square=square_dsm_bool)
-        value_dsm = dsm(ds_value)
+        ds_value = norm_values.reshape(-1, 1)
+        value_dsm = pdist(ds_value, metric='euclidean')
         
         if ranked:
             value_dsm = rankdata(value_dsm)
-        else:
-            value_dsm = value_dsm.samples.reshape(-1)
             
         if remove_within_day and btwn_day_inds is not None:
             value_dsm = value_dsm[btwn_day_inds]
@@ -84,7 +82,7 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
     return fit_dict
 
 
-def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=None):
+def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
 
     # Define the nonlinear model function
     def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, abs_value, partial_dsms):
@@ -92,14 +90,11 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
         # Divisively normalize values
         norm_values = abs_value / (sigma + abs_value*w)
         
-        ds_value = dataset_wizard(norm_values, targets=np.zeros(len(norm_values)))
-        dsm = PDist(pairwise_metric='euclidean', square=square_dsm_bool)
-        value_dsm = dsm(ds_value)
+        ds_value = norm_values.reshape(-1, 1)
+        value_dsm = pdist(ds_value, metric='euclidean')
         
         if ranked:
             value_dsm = rankdata(value_dsm)
-        else:
-            value_dsm = value_dsm.samples.reshape(-1)
             
         if remove_within_day and btwn_day_inds is not None:
             value_dsm = value_dsm[btwn_day_inds]
@@ -147,7 +142,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds=
     return fit_dict
 
 
-def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=None):
+def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
 
     # Define the nonlinear model function
     def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, abs_value, partial_dsms):
@@ -155,14 +150,11 @@ def abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds=N
         # Divisively normalize values
         norm_values = abs_value / sigma 
         
-        ds_value = dataset_wizard(norm_values, targets=np.zeros(len(norm_values)))
-        dsm = PDist(pairwise_metric='euclidean', square=square_dsm_bool)
-        value_dsm = dsm(ds_value)
+        ds_value = norm_values.reshape(-1, 1)
+        value_dsm = pdist(ds_value, metric='euclidean')
         
         if ranked:
             value_dsm = rankdata(value_dsm)
-        else:
-            value_dsm = value_dsm.samples.reshape(-1)
             
         if remove_within_day and btwn_day_inds is not None:
             value_dsm = value_dsm[btwn_day_inds]
@@ -246,12 +238,12 @@ def save_results(subj, results_dict, mask_names):
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     
     # Save parameter fits and statistics
-    results_file = os.path.join(subj_dir, 'rsa_norm_results.json')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_new.json')
     with open(results_file, 'w') as f:
         json.dump(results_dict, f, indent=4)
 
     # Save plot
-    plot_file = os.path.join(subj_dir, 'rsa_norm_plot.png')
+    plot_file = os.path.join(subj_dir, 'rsa_norm_plot_new.png')
     fig, ax = plot_multi_mask_normalization_comparison(subj, results_dict, mask_names)
     
     if ax.has_data():
@@ -287,7 +279,7 @@ for subj in subj_list:
 
     fmri_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/fmri_dsm_list_np.npz'
     fmri_dsm_list = np.load(fmri_dsms_file)
-    pdb.set_trace()
+    fmri_dsm_list = [fmri_dsm_list[key] for key in fmri_dsm_list]
     
     if int(subj) < 104:
         target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms.csv'
@@ -355,18 +347,19 @@ for subj in subj_list:
             else:
                 btwn_day_inds = np.where(res_day == 1)[0]
     else:
-        target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms'
-        target_dsms = h5load(target_dsms_file)
-        pdb.set_trace()
-
-        subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
-        subj_info_dict = h5load(subj_info_file)
-        abs_value = subj_info_dict['abs_value']
-        trial_categ = subj_info_dict['trial_categ']
-        sitem_inds = subj_info_dict['sitem_inds']
-        bundle_inds = subj_info_dict['bundle_inds']
-        run_array = subj_info_dict['run_array']
-        day_array = subj_info_dict['day_array']
+        target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms_np.npz'
+        target_dsms = np.load(target_dsms_file)
+        target_dsms = {key: target_dsms[key] for key in target_dsms}
+        #target_dsms = h5load(target_dsms_file)
+        
+        subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_all_trials.csv'
+        subj_info_dict = pd.read_csv(subj_info_file)
+        abs_value = subj_info_dict['Stimulus Value'].values
+        trial_categ = subj_info_dict['Trial Categ'].values
+        item1_value = subj_info_dict['Item 1 Value'].values
+        item2_value = subj_info_dict['Item 2 Value'].values
+        sitem_inds = trial_categ == 0
+        bundle_inds = trial_categ == 1
     
         if remove_within_day:
             res_day = target_dsms['day']
@@ -394,9 +387,9 @@ for subj in subj_list:
     
         # Perform regressions and collect results
         results_dict[mask_name] = {
-            'Divisive by Cat': nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds),
-            'Sigma and w': nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds),
-            'Absolute': abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds)
+            'Divisive by Cat': nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds, item1_value, item2_value),
+            'Sigma and w': nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value),
+            'Absolute': abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value)
         }
     
         
