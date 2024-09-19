@@ -1,10 +1,10 @@
-#from mvpa2.suite import *
+from mvpa2.suite import *
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, "/Users/locro/Documents/Bundle_Value/mvpa/")
 import os
 os.chdir("/Users/locro/Documents/Bundle_Value/mvpa/")
-#import mvpa_utils 
+import mvpa_utils 
 import numpy as np
 import time
 from lmfit import Model, Parameters
@@ -357,6 +357,7 @@ for subj in subj_list:
     else:
         target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms'
         target_dsms = h5load(target_dsms_file)
+        pdb.set_trace()
 
         subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
         subj_info_dict = h5load(subj_info_file)
