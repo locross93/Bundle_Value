@@ -1,10 +1,10 @@
-from mvpa2.suite import *
+#from mvpa2.suite import *
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, "/Users/locro/Documents/Bundle_Value/mvpa/")
 import os
 os.chdir("/Users/locro/Documents/Bundle_Value/mvpa/")
-import mvpa_utils 
+#import mvpa_utils 
 import numpy as np
 import time
 from lmfit import Model, Parameters
@@ -285,8 +285,9 @@ for subj in subj_list:
     start_time = time.time()
     print(subj)
 
-    fmri_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/fmri_dsm_list'
-    fmri_dsm_list = h5load(fmri_dsms_file)
+    fmri_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/fmri_dsm_list_np.npz'
+    fmri_dsm_list = np.load(fmri_dsms_file)
+    pdb.set_trace()
     
     if int(subj) < 104:
         target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms.csv'
@@ -295,7 +296,7 @@ for subj in subj_list:
         
         subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
         subj_info_dict = h5load(subj_info_file+'_list')
-        breakpoint()
+        pdb.set_trace()
         abs_value = subj_info_dict[0]
         trial_categ = subj_info_dict[1]
         sitem_inds = subj_info_dict[2]
