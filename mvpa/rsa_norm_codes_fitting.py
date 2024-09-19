@@ -270,7 +270,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-#subj_list = ['104']
+subj_list = ['104']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
@@ -295,6 +295,7 @@ for subj in subj_list:
         
         subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
         subj_info_dict = h5load(subj_info_file+'_list')
+        breakpoint()
         abs_value = subj_info_dict[0]
         trial_categ = subj_info_dict[1]
         sitem_inds = subj_info_dict[2]
