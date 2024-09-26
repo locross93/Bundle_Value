@@ -85,10 +85,11 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
 def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, abs_value, partial_dsms):
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, item1_value, item2_value, partial_dsms):
 
         # Divisively normalize values
-        norm_values = abs_value / (sigma + abs_value*w)
+        #norm_values = abs_value / (sigma + abs_value*w)
+        norm_values = (item1_value + item2_value) / (sigma + w*(item1_value + item2_value))
         
         ds_value = norm_values.reshape(-1, 1)
         value_dsm = pdist(ds_value, metric='euclidean')
@@ -107,7 +108,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds,
         return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3]  
     
     # Create the LMfit model
-    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
+    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'item1_value', 'item2_value', 'partial_dsms'])
     
     # Set up parameters with initial guesses
     params = Parameters()
@@ -120,7 +121,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds,
     
     # Fit the model
     result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
-                             abs_value=abs_value, partial_dsms=partial_dsms)
+                             item1_value=item1_value, item2_value=item2_value, partial_dsms=partial_dsms)
     
     # Calculate statistics
     bic = result.bic
@@ -262,7 +263,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-subj_list = ['104']
+subj_list = ['104','105','106','107','108']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
@@ -288,7 +289,6 @@ for subj in subj_list:
         
         subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
         subj_info_dict = h5load(subj_info_file+'_list')
-        pdb.set_trace()
         abs_value = subj_info_dict[0]
         trial_categ = subj_info_dict[1]
         sitem_inds = subj_info_dict[2]
