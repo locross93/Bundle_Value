@@ -19,7 +19,7 @@ import json
 import pdb
     
 
-def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds, item1_value, item2_value):
+def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
 
     # Define the nonlinear model function
     def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, abs_value, partial_dsms):
@@ -263,7 +263,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-subj_list = ['104','105','106','107','108']
+subj_list = ['105','106','107','108','109','110','111','112','113','114']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
@@ -279,8 +279,8 @@ for subj in subj_list:
     print(subj)
 
     fmri_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/fmri_dsm_list_np.npz'
-    fmri_dsm_list = np.load(fmri_dsms_file)
-    fmri_dsm_list = [fmri_dsm_list[key] for key in fmri_dsm_list]
+    data = np.load(fmri_dsms_file)
+    fmri_dsm_list = [data['arr_{}'.format(i)] for i in range(0, len(data))]
     
     if int(subj) < 104:
         target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms.csv'
@@ -358,8 +358,8 @@ for subj in subj_list:
         trial_categ = subj_info_dict['Trial Categ'].values
         item1_value = subj_info_dict['Item 1 Value'].values
         item2_value = subj_info_dict['Item 2 Value'].values
-        sitem_inds = trial_categ == 0
-        bundle_inds = trial_categ == 1
+        sitem_inds = np.where(trial_categ == 0)[0]
+        bundle_inds = np.where(trial_categ == 1)[0]
     
         if remove_within_day:
             res_day = target_dsms['day']
@@ -387,7 +387,7 @@ for subj in subj_list:
     
         # Perform regressions and collect results
         results_dict[mask_name] = {
-            'Divisive by Cat': nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds, item1_value, item2_value),
+            'Divisive by Cat': nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds),
             'Sigma and w': nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value),
             'Absolute': abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value)
         }

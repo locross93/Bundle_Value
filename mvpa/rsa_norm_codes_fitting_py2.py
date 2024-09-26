@@ -81,6 +81,8 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
                     'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
                     'a4': result.params['a4'].value, 'sigma': result.params['sigma'].value}
     
+    pdb.set_trace()
+    
     return fit_dict
 
 
@@ -246,16 +248,16 @@ def save_results(subj, results_dict, mask_names):
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     
     # Save parameter fits and statistics
-    results_file = os.path.join(subj_dir, 'rsa_norm_results.json')
-    with open(results_file, 'w') as f:
-        json.dump(results_dict, f, indent=4)
+#    results_file = os.path.join(subj_dir, 'rsa_norm_results.json')
+#    with open(results_file, 'w') as f:
+#        json.dump(results_dict, f, indent=4)
 
     # Save plot
     plot_file = os.path.join(subj_dir, 'rsa_norm_plot.png')
     fig, ax = plot_multi_mask_normalization_comparison(subj, results_dict, mask_names)
     
     if ax.has_data():
-        fig.savefig(plot_file, bbox_inches='tight')
+        #fig.savefig(plot_file, bbox_inches='tight')
         plt.close(fig)
         print("Plot saved successfully: {}".format(plot_file))
     else:
@@ -287,7 +289,6 @@ for subj in subj_list:
 
     fmri_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/fmri_dsm_list'
     fmri_dsm_list = h5load(fmri_dsms_file)
-    pdb.set_trace()
     
     if int(subj) < 104:
         target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms.csv'
