@@ -82,14 +82,205 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
     return fit_dict
 
 
-def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
+def nonlinear_rsa_regression2_plus_vt(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, item1_value, item2_value, partial_dsms):
-
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, a4, sigma, abs_value, partial_dsms):
+        norm_values = np.zeros(len(abs_value))
+        
         # Divisively normalize values
-        #norm_values = abs_value / (sigma + abs_value*w)
-        norm_values = (item1_value + item2_value) / (sigma + w*(item1_value + item2_value))
+        for trial_inds in trial_type_inds:
+            avg_value = np.mean(abs_value[trial_inds])
+            norm_values[trial_inds] = abs_value[trial_inds] / (sigma + avg_value + abs_value[trial_inds])
+        
+        ds_value = norm_values.reshape(-1, 1)
+        value_dsm = pdist(ds_value, metric='euclidean')
+        
+        if ranked:
+            value_dsm = rankdata(value_dsm)
+            
+        if remove_within_day and btwn_day_inds is not None:
+            value_dsm = value_dsm[btwn_day_inds]
+        
+        # transpose partial_dsms
+        partial_dsms = partial_dsms.T
+        # concatenate partial_dsms with value_dsm by column
+        x = np.column_stack((partial_dsms, value_dsm))
+        
+        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] 
+    
+    # Create the LMfit model
+    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
+    
+    # Set up parameters with initial guesses
+    params = Parameters()
+    params.add('a0', value=0)
+    params.add('a1', value=1)
+    params.add('a2', value=1)
+    params.add('a3', value=1)
+    params.add('a4', value=1)
+    params.add('sigma', value=0, min=0)  # sigma should be non-negative
+    
+    # Fit the model
+    result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
+                             abs_value=abs_value, partial_dsms=partial_dsms)
+    
+    # Calculate statistics
+    bic = result.bic
+    
+    # Calculate adjusted R-squared
+    nobs = len(temp_fmri)
+    num_params = len([p for p in result.params.values() if not p.vary])
+    df_modelwc = len(result.params) - num_params # degrees of freedom
+    ss_total = np.sum((temp_fmri - np.mean(temp_fmri))**2)
+    ss_residual = np.sum(result.residual**2)
+    r_squared = 1 - (ss_residual / ss_total)
+    adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
+
+    fit_dict = {'bic': bic, 'adj_r2': adj_r2, 
+                    'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+                    'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+                    'a4': result.params['a4'].value, 'sigma': result.params['sigma'].value}
+    
+    return fit_dict
+
+
+def nonlinear_rsa_regression2_denom(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
+
+    # Define the nonlinear model function
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, w1, w2, sigma, abs_value, partial_dsms):
+        norm_values = np.zeros(len(abs_value))
+        
+        # Divisively normalize values
+        for trial_inds in trial_type_inds:
+            avg_value = np.mean(abs_value[trial_inds])
+            norm_values[trial_inds] = abs_value[trial_inds] / (sigma + w1*avg_value + w2*abs_value[trial_inds])
+        
+        ds_value = norm_values.reshape(-1, 1)
+        value_dsm = pdist(ds_value, metric='euclidean')
+        
+        if ranked:
+            value_dsm = rankdata(value_dsm)
+            
+        if remove_within_day and btwn_day_inds is not None:
+            value_dsm = value_dsm[btwn_day_inds]
+        
+        # transpose partial_dsms
+        partial_dsms = partial_dsms.T
+        # concatenate partial_dsms with value_dsm by column
+        x = np.column_stack((partial_dsms, value_dsm))
+        
+        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3] 
+    
+    # Create the LMfit model
+    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'abs_value', 'partial_dsms'])
+    
+    # Set up parameters with initial guesses
+    params = Parameters()
+    params.add('a0', value=0)
+    params.add('a1', value=1)
+    params.add('a2', value=1)
+    params.add('a3', value=1)
+    params.add('w1', value=1, min=0)
+    params.add('w2', value=1, min=0)
+    params.add('sigma', value=0, min=0)  # sigma should be non-negative
+    
+    # Fit the model
+    result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
+                             abs_value=abs_value, partial_dsms=partial_dsms)
+    
+    # Calculate statistics
+    bic = result.bic
+    
+    # Calculate adjusted R-squared
+    nobs = len(temp_fmri)
+    num_params = len([p for p in result.params.values() if not p.vary])
+    df_modelwc = len(result.params) - num_params # degrees of freedom
+    ss_total = np.sum((temp_fmri - np.mean(temp_fmri))**2)
+    ss_residual = np.sum(result.residual**2)
+    r_squared = 1 - (ss_residual / ss_total)
+    adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
+
+    fit_dict = {'bic': bic, 'adj_r2': adj_r2, 
+                    'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+                    'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+                    'w1': result.params['w1'].value, 'w2': result.params['w2'].value, 'sigma': result.params['sigma'].value}
+    
+    return fit_dict
+
+
+# def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
+
+#     # Define the nonlinear model function
+#     def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w, item1_value, item2_value, partial_dsms):
+
+#         # Divisively normalize values
+#         #norm_values = abs_value / (sigma + abs_value*w)
+#         norm_values = (item1_value + item2_value) / (sigma + w*(item1_value + item2_value))
+        
+#         ds_value = norm_values.reshape(-1, 1)
+#         value_dsm = pdist(ds_value, metric='euclidean')
+        
+#         if ranked:
+#             value_dsm = rankdata(value_dsm)
+            
+#         if remove_within_day and btwn_day_inds is not None:
+#             value_dsm = value_dsm[btwn_day_inds]
+        
+#         # transpose partial_dsms
+#         partial_dsms = partial_dsms.T
+#         # concatenate partial_dsms with value_dsm by column
+#         x = np.column_stack((partial_dsms, value_dsm))
+        
+#         return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3]  
+    
+#     # Create the LMfit model
+#     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'item1_value', 'item2_value', 'partial_dsms'])
+    
+#     # Set up parameters with initial guesses
+#     params = Parameters()
+#     params.add('a0', value=0)
+#     params.add('a1', value=1)
+#     params.add('a2', value=1)
+#     params.add('a3', value=1)
+#     params.add('sigma', value=5, min=0)  # sigma should be non-negative
+#     params.add('w', value=1, min=0)  # w should be non-negative
+    
+#     # Fit the model
+#     result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
+#                              item1_value=item1_value, item2_value=item2_value, partial_dsms=partial_dsms)
+    
+#     # Calculate statistics
+#     bic = result.bic
+    
+#     # Calculate adjusted R-squared
+#     nobs = len(temp_fmri)
+#     num_params = len([p for p in result.params.values() if not p.vary])
+#     df_modelwc = len(result.params) - num_params # degrees of freedom
+#     ss_total = np.sum((temp_fmri - np.mean(temp_fmri))**2)
+#     ss_residual = np.sum(result.residual**2)
+#     r_squared = 1 - (ss_residual / ss_total)
+#     adj_r2 = 1 - (1 - r_squared) * ((nobs - 1) / (nobs - df_modelwc - 1))
+
+#     fit_dict = {'bic': bic, 'adj_r2': adj_r2,
+#                     'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
+#                     'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
+#                     'sigma': result.params['sigma'].value, 'w': result.params['w'].value}
+    
+#     return fit_dict
+
+
+def nonlinear_rsa_regression3_new(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
+
+    # Define the nonlinear model function
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, sigma, w1, w2, item1_value, item2_value, partial_dsms):
+        norm_values = np.zeros(len(abs_value))
+        
+        # Divisively normalize values
+        for trial_inds in trial_type_inds:
+            avg_value = np.mean(abs_value[trial_inds])
+            sum_const_values = (item1_value[trial_inds] + item2_value[trial_inds])
+            norm_values[trial_inds] = sum_const_values / (sigma + w1*avg_value + w2*sum_const_values)
         
         ds_value = norm_values.reshape(-1, 1)
         value_dsm = pdist(ds_value, metric='euclidean')
@@ -116,8 +307,9 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds,
     params.add('a1', value=1)
     params.add('a2', value=1)
     params.add('a3', value=1)
-    params.add('sigma', value=5, min=0)  # sigma should be non-negative
-    params.add('w', value=1, min=0)  # w should be non-negative
+    params.add('sigma', value=1, min=0)  # sigma should be non-negative
+    params.add('w1', value=1, min=0)  # w should be non-negative
+    params.add('w2', value=1, min=0)  # w should be non-negative
     
     # Fit the model
     result = lmfit_model.fit(temp_fmri, params, x=np.zeros(len(temp_fmri)), 
@@ -138,7 +330,7 @@ def nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds,
     fit_dict = {'bic': bic, 'adj_r2': adj_r2,
                     'a0': result.params['a0'].value, 'a1': result.params['a1'].value, 
                     'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
-                    'sigma': result.params['sigma'].value, 'w': result.params['w'].value}
+                    'w1': result.params['w1'].value, 'w2': result.params['w2'].value, 'sigma': result.params['sigma'].value}
     
     return fit_dict
 
@@ -217,8 +409,8 @@ def plot_multi_mask_normalization_comparison(subj, results_dict, mask_names):
     
     # Set up the plot
     fig, ax = plt.subplots(figsize=(12, 6))
-    hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-    sns.barplot(x='Mask', y='Adjusted R2', hue='Normalization', data=df, palette='Set2', hue_order=hue_order, ax=ax)
+    #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
+    sns.barplot(x='Mask', y='Adjusted R2', hue='Normalization', data=df, palette='Set2', ax=ax)
     
     # Customize the plot
     ax.set_title('Sub{0:03d} RSA Normalized Codes'.format(subj), fontsize=16)
@@ -239,7 +431,7 @@ def save_results(subj, results_dict, mask_names):
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     
     # Save parameter fits and statistics
-    results_file = os.path.join(subj_dir, 'rsa_norm_results_new.json')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_10_29_24.json')
     with open(results_file, 'w') as f:
         json.dump(results_dict, f, indent=4)
 
@@ -263,7 +455,7 @@ bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
-subj_list = ['105','106','107','108','109','110','111','112','113','114']
+subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
@@ -388,7 +580,9 @@ for subj in subj_list:
         # Perform regressions and collect results
         results_dict[mask_name] = {
             'Divisive by Cat': nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds),
-            'Sigma and w': nonlinear_rsa_regression3(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value),
+            'Divisive by Cat Plus Vt': nonlinear_rsa_regression2_plus_vt(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds),
+            'Divisive by Cat Denominator': nonlinear_rsa_regression2_denom(temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds),
+            'Constituent Values': nonlinear_rsa_regression3_new(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value),
             'Absolute': abs_value_rsa_regression(temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value)
         }
     
