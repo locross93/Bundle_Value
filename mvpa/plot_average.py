@@ -303,7 +303,7 @@ ax.set_title('b1+wv in Interaction'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
 ax.set_ylabel('b1+wv', fontsize=12)
 
-(df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v'] / df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v_s'] )>1.96
+abs(df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v'] / df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v_s'] )>1.96
 #ax.bar_label(ax.containers[0],labels={1,1,1,1,1,1,1,1,1})
 # for i in ax.containers:
 #     breakpoint()
