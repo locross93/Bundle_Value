@@ -79,6 +79,7 @@ def nonlinear_rsa_regression2(temp_fmri, partial_dsms, abs_value, trial_type_ind
                     'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
                     'a4': result.params['a4'].value, 'sigma': result.params['sigma'].value}
     
+    print(fit_dict)
     return fit_dict
 
 
@@ -142,6 +143,7 @@ def nonlinear_rsa_regression2_plus_vt(temp_fmri, partial_dsms, abs_value, trial_
                     'a2': result.params['a2'].value, 'a3': result.params['a3'].value,
                     'a4': result.params['a4'].value, 'sigma': result.params['sigma'].value}
     
+    breakpoint()
     return fit_dict
 
 
