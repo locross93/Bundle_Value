@@ -20,7 +20,8 @@ import json
 import pickle
 
 import pdb
-    
+from pathlib import Path
+
 #Divisive By Type and V
 def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
 
@@ -255,17 +256,35 @@ def save_results(subj, results_dict, mask_names):
     print(pd.DataFrame(results_dict).head())
 
 
-bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
+def get_bundle_path():
+    """
+    Returns the appropriate bundle path based on the system user.
+    Add new user paths as needed.
+    """
+    user_paths = {
+        'ryanwebb': '/Users/ryanwebb/Documents/GitHub/Bundle_Value/',
+        'locro': '/Users/locro/Documents/Bundle_Value/'
+    }
+    
+    # Get current user
+    current_user = Path.home().name
+    
+    # Return path for current user, with a helpful error if user not found
+    if current_user in user_paths:
+        return user_paths[current_user]
+    else:
+        raise ValueError(f"No path configured for user '{current_user}'. "
+                        f"Please add your path to the user_paths dictionary.")
+
+# Replace the hardcoded bundle_path with the dynamic one
+bundle_path = get_bundle_path()
 
 #all subjects
-#subj_list = ['101','102','103','104','105','106','107','108','109','110','111','112','113','114']
-
-#subjects with full brain
-subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
+subj_list = ['101', '102', '103', '104','105','106','107','108','109','110','111','112','113','114']
 
 
 #subject with "not insane" value regions (i.e. positive code for absolute value)
-#subj_list = ['104','107','108','109','110','111','112','113','114']
+#subj_list = ['101', '102', '103', '104','107','108','109','110','111','112','113','114']
 
 conditions = ['Food item', 'Trinket item', 'Food bundle','Trinket bundle','Mixed bundle']
 
@@ -279,7 +298,6 @@ square_dsm_bool = False
 ranked = False
 remove_within_day = True
 
-
 for subj in subj_list:
     start_time = time.time()
     print(subj)
@@ -288,93 +306,27 @@ for subj in subj_list:
     data = np.load(fmri_dsms_file)
     fmri_dsm_list = [data['arr_{}'.format(i)] for i in range(0, len(data))]
     
-    if int(subj) < 104:
-        target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms.csv'
-        target_dsms_df = pd.read_csv(target_dsms_file)
-        target_dsms = target_dsms_df.to_dict()
-        
-        subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_dict'
-        subj_info_dict = h5load(subj_info_file+'_list')
-        abs_value = subj_info_dict[0]
-        trial_categ = subj_info_dict[1]
-        sitem_inds = subj_info_dict[2]
-        bundle_inds = subj_info_dict[3]
-        run_array = subj_info_dict[4]
-        day_array = subj_info_dict[5]
-        
-        #item or bundle?
-        item_or_bundle = trial_categ
-        item_or_bundle[sitem_inds] = 0
-        item_or_bundle[bundle_inds] = 1
-        assert np.max(item_or_bundle) == 1
-        
-        num_trials = len(item_or_bundle)
-        ds_trial_cat = dataset_wizard(item_or_bundle, targets=np.zeros(num_trials))
-        dsm = PDist(pairwise_metric='matching', square=square_dsm_bool)
-        res_trial_cat = dsm(ds_trial_cat)
-        if ranked:
-            res_trial_cat = rankdata(res_trial_cat)
-        else:
-            res_trial_cat = res_trial_cat.samples.reshape(-1)
-        target_dsms['item_or_bundle'] = res_trial_cat
-
-        #choice 
-        choice = mvpa_utils.get_fmri_choices(subj, conditions)
-        ds_choice = dataset_wizard(choice, targets=np.zeros(num_trials))
-        dsm = PDist(pairwise_metric='matching', square=square_dsm_bool)
-        res_choice = dsm(ds_choice)
-        if ranked:
-            res_choice = rankdata(res_choice)
-        else:
-            res_choice = res_choice.samples.reshape(-1)
-        target_dsms['choice'] = res_choice
-        
-        #left vs right choice
-        lr_choice_list = np.genfromtxt(bundle_path+'mvpa/OpenfMRI_Format/sub'+str(subj)+'/model/task_info/lr_choice.txt')
-        lr_choice = lr_choice_list[:,1]
-        #if only individual item trials, only include these trials
-        if len(conditions) < 5:
-            lr_choice = lr_choice[inds_in_conds]
-        ds_lr_choice = dataset_wizard(lr_choice, targets=np.zeros(num_trials))
-        dsm = PDist(pairwise_metric='matching', square=square_dsm_bool)
-        res_lr_choice = dsm(ds_lr_choice)
-        if ranked:
-            res_lr_choice = rankdata(res_lr_choice)
-        else:
-            res_lr_choice = res_lr_choice.samples.reshape(-1)
-        target_dsms['lr_choice'] = res_lr_choice
-
-        if remove_within_day:
-            res_day = np.array(target_dsms['day'].values())
-            if ranked:
-                day_values = np.unique(res_day)
-                high_rank = np.max(day_values)
-                btwn_day_inds = np.where(res_day == high_rank)[0]
-            else:
-                btwn_day_inds = np.where(res_day == 1)[0]
-    else:
-        target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms_np.npz'
-        target_dsms = np.load(target_dsms_file)
-        target_dsms = {key: target_dsms[key] for key in target_dsms}
-        #target_dsms = h5load(target_dsms_file)
-        
-        subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_all_trials.csv'
-        subj_info_dict = pd.read_csv(subj_info_file)
-        abs_value = subj_info_dict['Stimulus Value'].values
-        trial_categ = subj_info_dict['Trial Categ'].values
-        item1_value = subj_info_dict['Item 1 Value'].values
-        item2_value = subj_info_dict['Item 2 Value'].values
-        sitem_inds = np.where(trial_categ == 0)[0]
-        bundle_inds = np.where(trial_categ == 1)[0]
+    target_dsms_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/target_dsms_np.npz'
+    target_dsms = np.load(target_dsms_file, allow_pickle=True)
+    target_dsms = {key: target_dsms[key] for key in target_dsms}
     
-        if remove_within_day:
-            res_day = target_dsms['day']
-            if ranked:
-                day_values = np.unique(res_day)
-                high_rank = np.max(day_values)
-                btwn_day_inds = np.where(res_day == high_rank)[0]
-            else:
-                btwn_day_inds = np.where(res_day == 1)[0]
+    subj_info_file = bundle_path+'mvpa/presaved_data/sub'+str(subj)+'/info_all_trials.csv'
+    subj_info_dict = pd.read_csv(subj_info_file)
+    abs_value = subj_info_dict['Stimulus Value'].values
+    trial_categ = subj_info_dict['Trial Categ'].values
+    item1_value = subj_info_dict['Item 1 Value'].values
+    item2_value = subj_info_dict['Item 2 Value'].values
+    sitem_inds = np.where(trial_categ == 0)[0]
+    bundle_inds = np.where(trial_categ == 1)[0]
+
+    if remove_within_day:
+        res_day = target_dsms['day']
+        if ranked:
+            day_values = np.unique(res_day)
+            high_rank = np.max(day_values)
+            btwn_day_inds = np.where(res_day == high_rank)[0]
+        else:
+            btwn_day_inds = np.where(res_day == 1)[0]
 
     # set up rsa regression 
     norm_values = np.zeros([len(abs_value)])
@@ -410,7 +362,7 @@ for subj in subj_list:
         params.add('w_avg', value=1, vary=False) 
         
         if info['model'] not in results_dict: 
-            results_dict[info['model']] = {}        
+            results_dict[info['model']] = {}       
         results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
         # info['model']=''Divisive by Cat Average (sigma and w)'

@@ -15,11 +15,12 @@ import numpy as np
 import seaborn as sns
 from lmfit.model import load_modelresult
 
-bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
+#bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
+bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
 
-subj_list = ['104','107','108','109','110','111','112','113','114']
+subj_list = ['101', '102', '103', '104','107','108','109','110','111','112','113','114']
 
 all_data = []
 
