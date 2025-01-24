@@ -125,7 +125,6 @@ def concatenate_group_data(subjects, bundle_path, mask_index, model_dsm_names):
     #subject_nuisance_dsms = create_subject_nuisance_dsm(n_samples_per_subject)
     #group_partial_dsms.append(subject_nuisance_dsms)
     subject_nuisance_dsms = np.concatenate(n_samples_per_subject)
-    breakpoint()
     
     # Verify all DSMs have the same length
     dsm_length = len(group_fmri_dsm)
@@ -134,10 +133,10 @@ def concatenate_group_data(subjects, bundle_path, mask_index, model_dsm_names):
     
     return group_fmri_dsm, group_partial_dsms, group_abs_value, trial_type_inds, group_btwn_day_inds, subject_nuisance_dsms
 
-def nonlinear_rsa_items_group(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
+def nonlinear_rsa_items_group(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds, subject_labels):
     """Group-level nonlinear RSA with subject nuisance regressors."""
     
-    def nonlinear_model_sigma(a0, a1, a2, a3, a4, b0, b1, sigma, w1, w_v, w_avg, abs_value, partial_dsms):
+    def nonlinear_model_sigma(a0, a1, a2, a3, a4, b0, b1, sigma, w1, w_v, w_avg, abs_value, partial_dsms, subject_labels):
         norm_values = np.zeros(len(abs_value))
         # trial_categ is same length as norm_values with 0s for items and 1s for bundles
         trial_categ = np.zeros(len(abs_value))
@@ -163,18 +162,37 @@ def nonlinear_rsa_items_group(info, params, temp_fmri, partial_dsms, abs_value, 
             value_dsm = value_dsm[btwn_day_inds]
         
         # Combine all regressors
-        partial_dsms = partial_dsms.T
-        x = np.column_stack((partial_dsms, value_dsm))
+        #partial_dsms = partial_dsms.T
+        #x = np.column_stack((partial_dsms, value_dsm))
         #X = np.column_stack((partial_dsms, value_dsm, subject_nuisance_dsms))
 
-        return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] + x[:, 4] 
+        # Create subject regressors (1 for same subject, 0 for different)
+        unique_subjects = np.unique(subject_labels)
+        subject_effects = np.zeros(len(value_dsm))
+        
+        # For each subject (except the last one to avoid collinearity)
+        for i, subj in enumerate(unique_subjects[:-1]):
+            # Get parameter name for this subject
+            param_name = f's{i}'
+            # Create regressor (1 for within-subject comparisons, 0 for between)
+            is_within_subj = subject_labels == subj
+            # Add subject effect
+            subject_effects += params[param_name].value * is_within_subj
+        
+        # Combine all predictors
+        partial_dsms = partial_dsms.T
+        predicted_rdm = (a0 + a1 * partial_dsms[:, 0] + a2 * partial_dsms[:, 1] + 
+                        a3 * partial_dsms[:, 2] + value_dsm + subject_effects)
+
+        #return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + a4 * x[:, 3] + x[:, 4] 
+        return predicted_rdm
     
     # Create the LMfit model
-    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['abs_value', 'partial_dsms'])
+    lmfit_model = Model(nonlinear_model_sigma, independent_vars=['abs_value', 'partial_dsms', 'subject_labels'])
 
     # Fit the model
     result = lmfit_model.fit(temp_fmri, params, 
-                             abs_value=abs_value, partial_dsms=partial_dsms)
+                             abs_value=abs_value, partial_dsms=partial_dsms, subject_labels=subject_labels)
     
     # Calculate statistics
     ss_total = np.sum((temp_fmri - np.mean(temp_fmri))**2)
@@ -259,7 +277,7 @@ def save_results(bundle_path, results_dict):
 if __name__ == "__main__":
     # Setup
     bundle_path = get_bundle_path()
-    subjects = [104, 107, 108]  # Add all subject numbers
+    subjects = [101, 102, 103, 104, 107, 108, 109, 110, 111, 112, 113, 114]  # Add all subject numbers
     mask_names = ['vmPFC', 'OFCmed', 'dmPFC']
     
     # Specify which model DSMs to use (same as in individual subject analysis)
@@ -270,7 +288,7 @@ if __name__ == "__main__":
         print(f"Processing {mask_name}...")
         
         # Load and concatenate data - now including model_dsm_names
-        group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds, subject_nuisance_dsms = concatenate_group_data(
+        group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds, subject_labels = concatenate_group_data(
             subjects, 
             bundle_path, 
             mask_idx,
@@ -291,10 +309,13 @@ if __name__ == "__main__":
         params.add('w1', value=0, vary=False)
         params.add('w_v', value=0, vary=False)  
         params.add('w_avg', value=1, vary=False)
+        # create subject parameters
+        for i in range(len(subjects)-1):  # n-1 subject parameters to avoid collinearity
+            params.add(f's{i}', value=0)
 
         if info['model'] not in results_dict: 
             results_dict[info['model']] = {}        
-        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds)
+        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds, subject_labels)
 
         # Set up parameters for Interaction Full(w)
         info = {'mask': mask_name, 'model': 'Interaction Full(w)'}
@@ -310,10 +331,13 @@ if __name__ == "__main__":
         params.add('w1', value=0, vary=False)
         params.add('w_v', value=0)  
         params.add('w_avg', value=0, vary=False)
+        # create subject parameters
+        for i in range(len(subjects)-1):  # n-1 subject parameters to avoid collinearity
+            params.add(f's{i}', value=0)
         
         if info['model'] not in results_dict: 
             results_dict[info['model']] = {}        
-        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds)
+        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds, subject_labels)
         
         # Set up parameters for absolute model
         info = {'mask': mask_name, 'model': 'Absolute'}
@@ -328,20 +352,13 @@ if __name__ == "__main__":
         params.add('w1', value=0, vary=False)
         params.add('w_v', value=0, vary=False )  
         params.add('w_avg', value=0, vary=False) 
+        # create subject parameters
+        for i in range(len(subjects)-1):  # n-1 subject parameters to avoid collinearity
+            params.add(f's{i}', value=0)
 
         if info['model'] not in results_dict: 
             results_dict[info['model']] = {}        
-        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds)
-        
-        # # Add subject nuisance parameters
-        # for i in range(len(subjects)-1):  # n-1 subject parameters to avoid collinearity
-        #     params.add(f's{i}', value=0)
-        
-        # # Fit group RSA
-        # results, model_fit = nonlinear_rsa_items_group(
-        #     info, params, group_fmri_dsm, group_model_dsms,
-        #     group_abs_value, trial_type_inds, btwn_day_inds
-        # )
+        results_dict[info['model']][info['mask']], model_fit = nonlinear_rsa_items_group(info, params, group_fmri_dsm, group_model_dsms, group_abs_value, trial_type_inds, btwn_day_inds, subject_labels)
         
         # Save results
         # save_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'group')
