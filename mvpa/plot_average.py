@@ -28,7 +28,7 @@ all_data = []
 for subj in subj_list:
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     # Define the path to the JSON file
-    results_file = os.path.join(subj_dir, 'rsa_norm_results_11_07_24.pkl')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
     
     # Open and load the JSON file
     with open(results_file, 'rb') as f:
@@ -87,28 +87,28 @@ plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
-df.assign(bic_rel=df.bic)
-for subj in subj_list:
-    for mask in df.Mask.unique():
-        bic0 = df.loc[(df.Subject==subj) & (df.Mask==mask) & (df.Model=='Null'),'bic']
-        df.loc[(df.Subject==subj) & (df.Mask==mask),'bic_rel']=df.loc[(df.Subject==subj) & (df.Mask==mask),'bic'].subtract(bic0, fill_value=bic0)
+# df.assign(bic_rel=df.bic)
+# for subj in subj_list:
+#     for mask in df.Mask.unique():
+#         bic0 = df.loc[(df.Subject==subj) & (df.Mask==mask) & (df.Model=='Null'),'bic']
+#         df.loc[(df.Subject==subj) & (df.Mask==mask),'bic_rel']=df.loc[(df.Subject==subj) & (df.Mask==mask),'bic'].subtract(bic0, fill_value=bic0)
 
-# Set up the plot
-fig, ax = plt.subplots(figsize=(12, 6))
-#hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Mask', y='bic_rel', estimator='sum', errorbar=None, hue='Model', data=df, palette='Set2', ax=ax)
+# # Set up the plot
+# fig, ax = plt.subplots(figsize=(12, 6))
+# #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
+# sns.barplot(x='Mask', y='bic_rel', estimator='sum', errorbar=None, hue='Model', data=df, palette='Set2', ax=ax)
 
-# Customize the plot
-ax.set_title('RSA Normalized Codes Relative to Null'.format(subj), fontsize=16)
-ax.set_xlabel('ROI', fontsize=12)
-ax.set_ylabel('Change in BIC', fontsize=12)
+# # Customize the plot
+# ax.set_title('RSA Normalized Codes Relative to Null'.format(subj), fontsize=16)
+# ax.set_xlabel('ROI', fontsize=12)
+# ax.set_ylabel('Change in BIC', fontsize=12)
 
-# Adjust legend
-plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
+# # Adjust legend
+# plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
 
-# Adjust layout and display
-plt.tight_layout()
-plt.show()
+# # Adjust layout and display
+# plt.tight_layout()
+# plt.show()
 
 
 #sigma

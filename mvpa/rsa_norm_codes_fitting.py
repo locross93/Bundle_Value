@@ -57,6 +57,7 @@ def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_i
         x = np.column_stack((partial_dsms, value_dsm))
         
         return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3] 
+        #return a0 + a3 * x[:, 0] + x[:, -1] 
     
     # Create the LMfit model
     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['abs_value', 'partial_dsms'])
@@ -90,7 +91,7 @@ def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_i
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(info['subj']))
     
     # Save parameter fits and statistics
-    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_11_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
         result.params.dump(f)
         
     # Save model fit and statistics
@@ -134,6 +135,7 @@ def nonlinear_rsa_items(info, params, temp_fmri, partial_dsms, abs_value, btwn_d
         x = np.column_stack((partial_dsms, value_dsm))
         
         return a0 + a1 * x[:, 0] + a2 * x[:, 1] + a3 * x[:, 2] + x[:, 3]  
+        #return a0 + a3 * x[:, 0] + x[:, -1]
     
     # Create the LMfit model
     lmfit_model = Model(nonlinear_model_sigma, independent_vars=['x', 'item1_value', 'item2_value', 'partial_dsms'])
@@ -186,7 +188,7 @@ def nonlinear_rsa_items(info, params, temp_fmri, partial_dsms, abs_value, btwn_d
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(info['subj']))
     
     # Save parameter fits and statistics for this model
-    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_11_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
         result.params.dump(f)
         
     # Save model fit and statistics
@@ -234,7 +236,7 @@ def save_results(subj, results_dict, mask_names):
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     
     # Save parameter fits and statistics
-    results_file = os.path.join(subj_dir, 'rsa_norm_results_11_07_24.pkl')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
     with open(results_file, 'wb') as f:
         #json.dump(results_dict, f, indent=4)
         #save_modelresult(modelresult, fname)
@@ -280,8 +282,9 @@ def get_bundle_path():
 bundle_path = get_bundle_path()
 
 # all subjects
-# subj_list = ['101', '102', '103', '104','105','106','107','108','109','110','111','112','113','114']
-subj_list = ['104']
+subj_list = ['101', '102', '103', '104','105','106','107','108','109','110','111','112','113','114']
+#subj_list = ['104', '108']
+#subj_list = ['108']
 
 
 #subject with "not insane" value regions (i.e. positive code for absolute value)
@@ -333,6 +336,7 @@ for subj in subj_list:
     norm_values = np.zeros([len(abs_value)])
 
     model_dsm_names = ['choice','item_or_bundle','lr_choice']
+    #model_dsm_names = ['lr_choice']
     results_dict = {}
 
     for mask_num, mask_name in enumerate(mask_names):
@@ -409,12 +413,12 @@ for subj in subj_list:
         # Set up parameters with initial guesses
         params = Parameters()
         params.add('a0', value=0)
-        params.add('a1', value=1)
-        params.add('a2', value=1)
+        params.add('a1', value=0, vary=False)
+        params.add('a2', value=0) # item or bundle
         params.add('a3', value=1)
-        params.add('b0', value=0)
+        params.add('b0', value=0, vary=False)
         params.add('b1', value=1)
-        params.add('sigma', value=0, vary=False ) # sigma should be non-negative
+        params.add('sigma', value=0, vary=False) # sigma should be non-negative
         params.add('w1', value=0, vary=False)
         params.add('w_v', value=0)  
         params.add('w_avg', value=0, vary=False) 
@@ -422,6 +426,25 @@ for subj in subj_list:
         if info['model'] not in results_dict: 
             results_dict[info['model']] = {}        
         results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
+        
+        # info['model']='Interaction (w)'
+        
+        # # Set up parameters with initial guesses
+        # params = Parameters()
+        # params.add('a0', value=0)
+        # params.add('a1', value=1)
+        # params.add('a2', value=1)
+        # params.add('a3', value=1)
+        # params.add('b0', value=0, vary=False)
+        # params.add('b1', value=1)
+        # params.add('sigma', value=0, vary=False) # sigma should be non-negative
+        # params.add('w1', value=0, vary=False)
+        # params.add('w_v', value=0)  
+        # params.add('w_avg', value=0, vary=False) 
+                
+        # if info['model'] not in results_dict: 
+        #     results_dict[info['model']] = {}        
+        # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
         
         # info['model']='Divisive by Cat Interaction'
