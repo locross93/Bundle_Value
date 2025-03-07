@@ -26,20 +26,20 @@ from pathlib import Path
 def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(a0, a1, a2, a3, b0, b1, sigma, w1, w_v, w_avg, abs_value, partial_dsms):
+    def nonlinear_model_sigma(a0, a1, a2, a3, b1, b2, sigma, w1, w_v, w_avg, abs_value, partial_dsms):
         norm_values = np.zeros(len(abs_value))
         
-        if info['model']=='Interaction Full(w)':
-            # Interact values
-            for trial_inds in trial_type_inds:
-                norm_values[trial_inds] = b0 * trial_categ[trial_inds] + b1 * abs_value[trial_inds] + w_v * abs_value[trial_inds]*trial_categ[trial_inds]
-                #logan's suggestion
-                #norm_values[trial_inds] = b0 * trial_categ[trial_inds] + b1 * abs_value[trial_inds]*(1-trial_categ[trial_inds]) + w_v * abs_value[trial_inds]*trial_categ[trial_inds]
-        else:
-            # Divisively normalize values
-            for trial_inds in trial_type_inds:
-                avg_value = np.mean(abs_value[trial_inds])
-                norm_values[trial_inds] = b0 * trial_categ[trial_inds] + ((b1 * abs_value[trial_inds]) / (sigma + w_avg * avg_value  + w1 * trial_categ[trial_inds] + w_v *abs_value[trial_inds]))
+        # if info['model']=='Interaction Full(w)':
+        #     # Interact values
+        #     for trial_inds in trial_type_inds:
+        #         norm_values[trial_inds] =  b1 * abs_value[trial_inds] + w_v * abs_value[trial_inds]*trial_categ[trial_inds]
+        #         #logan's suggestion
+        #         #norm_values[trial_inds] = b0 * trial_categ[trial_inds] + b1 * abs_value[trial_inds]*(1-trial_categ[trial_inds]) + w_v * abs_value[trial_inds]*trial_categ[trial_inds]
+        # else:
+        #     # Divisively normalize values
+        for trial_inds in trial_type_inds:
+            avg_value = np.mean(abs_value[trial_inds])
+            norm_values[trial_inds] = ((b1 * abs_value[trial_inds]+ b2 * abs_value[trial_inds]*trial_categ[trial_inds]) / (sigma + w_avg * avg_value  + w1 * trial_categ[trial_inds] + w_v *abs_value[trial_inds]))
             
         
         ds_value = norm_values.reshape(-1, 1)
@@ -103,22 +103,14 @@ def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_i
 def nonlinear_rsa_items(info, params, temp_fmri, partial_dsms, abs_value, btwn_day_inds, item1_value, item2_value):
 
     # Define the nonlinear model function
-    def nonlinear_model_sigma(x, a0, a1, a2, a3, b0, b1, sigma, w1, w_v, w_avg, item1_value, item2_value, partial_dsms):
+    def nonlinear_model_sigma(x, a0, a1, a2, a3, b1, b2, sigma, w1, w_v, w_avg, item1_value, item2_value, partial_dsms):
         norm_values = np.zeros(len(abs_value))
         
-        
-        if info['model']=='Items Interaction':
-            # Divisively normalize values
-            for trial_inds in trial_type_inds:
+
+        for trial_inds in trial_type_inds:
                 avg_value = np.mean(abs_value[trial_inds])
                 sum_const_values = (item1_value[trial_inds] + item2_value[trial_inds])
-                norm_values[trial_inds] =  b0*trial_categ[trial_inds]  + b1*sum_const_values + w_v*sum_const_values*trial_categ[trial_inds] + w_avg*avg_value
-        else:    
-            # Divisively normalize values
-            for trial_inds in trial_type_inds:
-                avg_value = np.mean(abs_value[trial_inds])
-                sum_const_values = (item1_value[trial_inds] + item2_value[trial_inds])
-                norm_values[trial_inds] =  b0*trial_categ[trial_inds]  + (b1*sum_const_values / (sigma + w1*trial_categ[trial_inds] + w_v*sum_const_values + w_avg*avg_value))
+                norm_values[trial_inds] = ( (b1*sum_const_values+ b2 * abs_value[trial_inds]*trial_categ[trial_inds]) / (sigma + w1*trial_categ[trial_inds] + w_v*sum_const_values + w_avg*avg_value))
         
         ds_value = norm_values.reshape(-1, 1)
         value_dsm = pdist(ds_value, metric='euclidean')
@@ -351,24 +343,64 @@ for subj in subj_list:
         
         info={'subj': subj,'mask': mask_name}
         
-        info['model']='Divisive by Cat Average'
+        info['model']='Null'
         
         # Set up parameters with initial guesses
         params = Parameters()
         params.add('a0', value=0)
-        params.add('a1', value=1)
-        params.add('a2', value=1)
-        params.add('a3', value=1)
-        params.add('b0', value=0, vary=False)
-        params.add('b1', value=1)
-        params.add('sigma', value=1, min=0) # sigma should be non-negative
+        params.add('a1', value=0, vary=False) # choice
+        params.add('a2', value=0) # item or bundle
+        params.add('a3', value=1) # L or R
+        params.add('b1', value=0, vary=False)
+        params.add('b2', value=0, vary=False)
+        params.add('sigma', value=1, vary=False) # sigma should be non-negative
         params.add('w1', value=0, vary=False)
-        params.add('w_v', value=0, vary=False)  
-        params.add('w_avg', value=1, vary=False) 
+        params.add('w_v', value=0, vary=False )  
+        params.add('w_avg', value=0, vary=False) 
         
         if info['model'] not in results_dict: 
-            results_dict[info['model']] = {}       
+            results_dict[info['model']] = {}        
         results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
+
+        
+        info['model']='Absolute'
+        
+        # Set up parameters with initial guesses
+        params = Parameters()
+        params.add('a0', value=0)
+        params.add('a1', value=0, vary=False) # choice
+        params.add('a2', value=0) # item or bundle
+        params.add('a3', value=1) # L or R
+        params.add('b1', value=1)
+        params.add('b2', value=0, vary=False)
+        params.add('sigma', value=1, vary=False) # sigma should be non-negative
+        params.add('w1', value=0, vary=False)
+        params.add('w_v', value=0, vary=False )  
+        params.add('w_avg', value=0, vary=False) 
+        
+        if info['model'] not in results_dict: 
+            results_dict[info['model']] = {}        
+        results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
+
+        
+        # info['model']='Divisive by Cat Average'
+        
+        # # Set up parameters with initial guesses
+        # params = Parameters()
+        # params.add('a0', value=0)
+        # params.add('a1', value=1)
+        # params.add('a2', value=1)
+        # params.add('a3', value=1)
+        # params.add('b1', value=1)
+        # params.add('b2', value=0, vary=False)
+        # params.add('sigma', value=1, min=0) # sigma should be non-negative
+        # params.add('w1', value=0, vary=False)
+        # params.add('w_v', value=0, vary=False)  
+        # params.add('w_avg', value=1, vary=False) 
+        
+        # if info['model'] not in results_dict: 
+        #     results_dict[info['model']] = {}       
+        # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
         # info['model']=''Divisive by Cat Average (sigma and w)'
         
@@ -408,24 +440,24 @@ for subj in subj_list:
         # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
         
-        info['model']='Interaction Full(w)'
+        # info['model']='Interaction Full(w)'
         
-        # Set up parameters with initial guesses
-        params = Parameters()
-        params.add('a0', value=0)
-        params.add('a1', value=0, vary=False)
-        params.add('a2', value=0) # item or bundle
-        params.add('a3', value=1)
-        params.add('b0', value=0, vary=False)
-        params.add('b1', value=1)
-        params.add('sigma', value=0, vary=False) # sigma should be non-negative
-        params.add('w1', value=0, vary=False)
-        params.add('w_v', value=0)  
-        params.add('w_avg', value=0, vary=False) 
+        # # Set up parameters with initial guesses
+        # params = Parameters()
+        # params.add('a0', value=0)
+        # params.add('a1', value=0, vary=False)
+        # params.add('a2', value=0) # item or bundle
+        # params.add('a3', value=1)
+        # params.add('b1', value=1)
+        # params.add('b2', value=0)
+        # params.add('sigma', value=1, vary=False) # sigma should be non-negative
+        # params.add('w1', value=0, vary=False)
+        # params.add('w_v', value=0, vary=False)  
+        # params.add('w_avg', value=0, vary=False) 
                 
-        if info['model'] not in results_dict: 
-            results_dict[info['model']] = {}        
-        results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
+        # if info['model'] not in results_dict: 
+        #     results_dict[info['model']] = {}        
+        #results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
         # info['model']='Interaction (w)'
         
@@ -466,16 +498,37 @@ for subj in subj_list:
         #     results_dict[info['model']] = {}        
         # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
 
+        info['model']='Relative'
+        # b_0 + b_1 * v / (1 + w1 I)
+        # Set up parameters with initial guesses
+        params = Parameters()
+        params.add('a0', value=0)
+        params.add('a1', value=0, vary=False)
+        params.add('a2', value=0) # item or bundle
+        params.add('a3', value=1)
+        params.add('b1', value=1)
+        params.add('b2', value=0)
+        params.add('sigma', value=1, vary=False) # sigma should be non-negative
+        params.add('w1', value=0, vary=False)
+        params.add('w_v', value=0, vary=False)  
+        params.add('w_avg', value=0, vary=False) 
+        
+        if info['model'] not in results_dict: 
+            results_dict[info['model']] = {}        
+        results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
+
+
+
         # info['model']='Divisive by Cat Interaction (Diff Spec)'
         # # b_0 + b_1 * v / (1 + w1 I)
         # # Set up parameters with initial guesses
         # params = Parameters()
         # params.add('a0', value=0)
-        # params.add('a1', value=1)
-        # params.add('a2', value=1)
+        # params.add('a1', value=0, vary=False) #choice
+        # params.add('a2', value=0) # item or bundle
         # params.add('a3', value=1)
-        # params.add('b0', value=0)
         # params.add('b1', value=1)
+        # params.add('b2', value=0, vary=False)
         # params.add('sigma', value=1, vary=False) # sigma should be non-negative
         # params.add('w1', value=1)
         # params.add('w_v', value=0, vary=False)  
@@ -489,41 +542,22 @@ for subj in subj_list:
         
         # # Set up parameters with initial guesses
         # params = Parameters()
-        # params.add('a0', value=0)
-        # params.add('a1', value=1)
-        # params.add('a2', value=1)
-        # params.add('a3', value=1)
-        # params.add('b0', value=0, vary=False)
-        # params.add('b1', value=1, vary=False)
-        # params.add('sigma', value=1, min=0) # sigma should be non-negative
-        # params.add('w1', value=1, vary=False)
-        # params.add('w_v', value=0, vary=False)  
+        # params.add('a0', value=results_dict['Divisive by Cat Interaction'][info['mask']]['a0'].n)
+        # params.add('a1', value=0, vary=False)
+        # params.add('a2', value=results_dict['Divisive by Cat Interaction'][info['mask']]['a2'].n) # item or bundle
+        # params.add('a3', value=results_dict['Divisive by Cat Interaction'][info['mask']]['a3'].n)
+        # params.add('b1', value=results_dict['Divisive by Cat Interaction'][info['mask']]['b1'].n)
+        # params.add('b2', value=results_dict['Divisive by Cat Interaction'][info['mask']]['b2'].n)
+        # params.add('sigma', value=1, vary=False) # sigma should be non-negative
+        # params.add('w1', value=0, vary=False)
+        # params.add('w_v', value=0)  
         # params.add('w_avg', value=0, vary=False) 
         
         # if info['model'] not in results_dict: 
         #     results_dict[info['model']] = {}        
         # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
-        
-        info['model']='Absolute'
-        
-        # Set up parameters with initial guesses
-        params = Parameters()
-        params.add('a0', value=0)
-        params.add('a1', value=1)
-        params.add('a2', value=1)
-        params.add('a3', value=1)
-        params.add('b0', value=0, vary=False)
-        params.add('b1', value=1)
-        params.add('sigma', value=1, vary=False) # sigma should be non-negative
-        params.add('w1', value=0, vary=False)
-        params.add('w_v', value=0, vary=False )  
-        params.add('w_avg', value=0, vary=False) 
-        
-        if info['model'] not in results_dict: 
-            results_dict[info['model']] = {}        
-        results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
-        
-        # info['model']='Absolute + Bundle'
+    
+        # # info['model']='Absolute + Bundle'
         
         # # Set up parameters with initial guesses
         # params = Parameters()
@@ -538,45 +572,25 @@ for subj in subj_list:
         # params.add('w_v', value=0, vary=False)  
         # params.add('w_avg', value=1, vary=False) 
         
-        
         # if info['model'] not in results_dict: 
         #     results_dict[info['model']] = {}        
         # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
         
-        # info['model']='Null'
-        
-        # # Set up parameters with initial guesses
-        # params = Parameters()
-        # params.add('a0', value=0)
-        # params.add('a1', value=1)
-        # params.add('a2', value=1)
-        # params.add('a3', value=1)
-        # params.add('b0', value=0, vary=False)
-        # params.add('b1', value=0, vary=False)
-        # params.add('sigma', value=1, vary=False) # sigma should be non-negative
-        # params.add('w1', value=0, vary=False)
-        # params.add('w_v', value=0, vary=False )  
-        # params.add('w_avg', value=0, vary=False) 
-        
-        # if info['model'] not in results_dict: 
-        #     results_dict[info['model']] = {}        
-        # results_dict[info['model']][info['mask']] = nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_inds, btwn_day_inds)
-        
-        #info['model']='Items'
+        # info['model']='Items'
         
         # # Set up parameters with initial guesses
         # params = Parameters()
         # # Set up parameters with initial guesses
         # params = Parameters()
         # params.add('a0', value=0)
-        # params.add('a1', value=1)
-        # params.add('a2', value=1)
-        # params.add('a3', value=1)
-        # params.add('b0', value=1)
+        # params.add('a1', value=0, vary=False) # choice
+        # params.add('a2', value=0) # item or bundle
+        # params.add('a3', value=1) #LvsR
         # params.add('b1', value=1)
+        # params.add('b2', value=0, vary=False)
         # params.add('sigma', value=1, vary=False)  # sigma should be non-negative
-        # params.add('w1', value=1, min=0)  # w should be non-negative
-        # params.add('w_v', value=1, min=0)  # w should be non-negative
+        # params.add('w1', value=0, vary=False)  # w should be non-negative
+        # params.add('w_v', value=0)  # w should be non-negative
         # params.add('w_avg', value=0, vary=False) 
         
         # if info['model'] not in results_dict: 
@@ -590,14 +604,14 @@ for subj in subj_list:
         # # Set up parameters with initial guesses
         # params = Parameters()
         # params.add('a0', value=0)
-        # params.add('a1', value=1)
-        # params.add('a2', value=1)
+        # params.add('a1', value=0, vary=False) # choice
+        # params.add('a2', value=0) # item or bundle
         # params.add('a3', value=1)
-        # params.add('b0', value=1)
         # params.add('b1', value=1)
+        # params.add('b2', value=1)
         # params.add('sigma', value=1, vary=False)  # sigma should be non-negative
         # params.add('w1', value=0, vary=False)  # w should be non-negative
-        # params.add('w_v', value=1)  # w should be non-negative
+        # params.add('w_v', value=0, vary=False)  # w should be non-negative
         # params.add('w_avg', value=0, vary=False) 
         
         # if info['model'] not in results_dict: 
