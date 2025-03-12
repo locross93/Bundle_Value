@@ -13,10 +13,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
+from scipy import stats 
 from lmfit.model import load_modelresult
 
-#bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
-bundle_path = '/Users/locro/Documents/Bundle_Value/'
+bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
+#bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
 
@@ -47,20 +48,22 @@ for subj in subj_list:
                 'Subject': subj,
                 'Mask': mask,
                 'Model': model,
-                'b0': results['b0'].n,
+                'a2': results['a2'].n,
                 'b1': results['b1'].n,
+                'b2': results['b2'].n,
                 'sigma': results['sigma'].n,
                 'w1': results['w1'].n,
                 'w_v': results['w_v'].n,
                 'w_avg': results['w_avg'].n,
-                'b0_s': results['b0'].s,
+                'a2_s': results['a2'].s,
                 'b1_s': results['b1'].s,
+                'b2_s': results['b2'].s,
                 'sigma_s': results['sigma'].s,
                 'w1_s': results['w1'].s,
                 'w_v_s': results['w_v'].s,
                 'w_avg_s': results['w_avg'].s,
-                'b1+w_v': (results['b1']+results['w_v']).n,
-                'b1+w_v_s': (results['b1']+results['w_v']).s,
+                'b1+b2': (results['b1'].n+results['b2']).n,
+                'b1+b2_s': (results['b1']+results['b2']).s,
                 'Adjusted R2': results['adj_r2'],
                 'bic': results['bic']
             })
@@ -87,28 +90,28 @@ plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
-# df.assign(bic_rel=df.bic)
-# for subj in subj_list:
-#     for mask in df.Mask.unique():
-#         bic0 = df.loc[(df.Subject==subj) & (df.Mask==mask) & (df.Model=='Null'),'bic']
-#         df.loc[(df.Subject==subj) & (df.Mask==mask),'bic_rel']=df.loc[(df.Subject==subj) & (df.Mask==mask),'bic'].subtract(bic0, fill_value=bic0)
+df.assign(bic_rel=df.bic)
+for subj in subj_list:
+    for mask in df.Mask.unique():
+        bic0 = df.loc[(df.Subject==subj) & (df.Mask==mask) & (df.Model=='Null'),'bic']
+        df.loc[(df.Subject==subj) & (df.Mask==mask),'bic_rel']=df.loc[(df.Subject==subj) & (df.Mask==mask),'bic'].subtract(bic0, fill_value=bic0)
 
-# # Set up the plot
-# fig, ax = plt.subplots(figsize=(12, 6))
-# #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-# sns.barplot(x='Mask', y='bic_rel', estimator='sum', errorbar=None, hue='Model', data=df, palette='Set2', ax=ax)
+# Set up the plot
+fig, ax = plt.subplots(figsize=(12, 6))
+#hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
+sns.barplot(x='Mask', y='bic_rel', estimator='sum', errorbar=None, hue='Model', data=df.loc[(df.Model != 'Null')], palette='Set2', ax=ax)
 
-# # Customize the plot
-# ax.set_title('RSA Normalized Codes Relative to Null'.format(subj), fontsize=16)
-# ax.set_xlabel('ROI', fontsize=12)
-# ax.set_ylabel('Change in BIC', fontsize=12)
+# Customize the plot
+ax.set_title('RSA Value Code Compared to Null Model'.format(subj), fontsize=16)
+ax.set_xlabel('ROI', fontsize=12)
+ax.set_ylabel('Change in BIC', fontsize=12)
 
-# # Adjust legend
-# plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
+# Adjust legend
+plt.legend(title='Model', bbox_to_anchor=(1.05, 1), loc='upper left')
 
-# # Adjust layout and display
-# plt.tight_layout()
-# plt.show()
+# Adjust layout and display
+plt.tight_layout()
+plt.show()
 
 
 #sigma
@@ -154,42 +157,21 @@ plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
-#b1 Absolute + Bundle across subjets
+
+#b Absolute across subjets
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b1', hue='Mask', data=df.loc[(df.Model=='Absolute + Bundle')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='a2', hue='Mask', data=df.loc[(df.Model=='Absolute')], palette='Set2', ax=ax)
 #ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
 # plt.bar(x='Subject', height ='b', data=df.loc[(df.Model=='Absolute') & (df.Mask=='vmPFC')])
 # plt.errorbar(x='Subject', y ='b', yerr = 'b_s', color="r", fmt="o", data=df.loc[(df.Model=='Absolute') & (df.Mask=='vmPFC')])
 
 
 # Customize the plot
-ax.set_title('b1 in Absolute + Bundle'.format(subj), fontsize=16)
+ax.set_title('a2 in Absolute'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('b1', fontsize=12)
-
-# Adjust legend
-plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# Adjust layout and display
-plt.tight_layout()
-plt.show()
-
-#b1 Absolute + Bundle across subjets
-# Set up the plot
-fig, ax = plt.subplots(figsize=(12, 6))
-#hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b0', hue='Mask', data=df.loc[(df.Model=='Absolute + Bundle')], palette='Set2', ax=ax)
-#ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
-# plt.bar(x='Subject', height ='b', data=df.loc[(df.Model=='Absolute') & (df.Mask=='vmPFC')])
-# plt.errorbar(x='Subject', y ='b', yerr = 'b_s', color="r", fmt="o", data=df.loc[(df.Model=='Absolute') & (df.Mask=='vmPFC')])
-
-
-# Customize the plot
-ax.set_title('b0 in Absolute + Bundle'.format(subj), fontsize=16)
-ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('b0', fontsize=12)
+ax.set_ylabel('a2', fontsize=12)
 
 # Adjust legend
 plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -199,35 +181,11 @@ plt.tight_layout()
 plt.show()
 
 
-
-
-# #b Absolute across subjets
-# # Set up the plot
-# fig, ax = plt.subplots(figsize=(12, 6))
-# #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-# ax=sns.barplot(x='Subject', y='b', errorbar='b_s', hue='Mask', data=df.loc[(df.Model=='Absolute')], palette='Set2', ax=ax)
-
-# #ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
-# #ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
-
-# # Customize the plot
-# ax.set_title('b in Absolute'.format(subj), fontsize=16)
-# ax.set_xlabel('Subject', fontsize=12)
-# ax.set_ylabel('b', fontsize=12)
-
-# # Adjust legend
-# plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# # Adjust layout and display
-# plt.tight_layout()
-# plt.show()
-
-
-#w1 Interaction across subjets
+#a2 Interaction across subjets
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b0', hue='Mask', data=df.loc[(df.Model=='Interaction Full(w)')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='a2', hue='Mask', data=df.loc[(df.Model=='Relative')], palette='Set2', ax=ax)
 #plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
 #plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="r", fmt="o", data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
 
@@ -235,9 +193,9 @@ sns.barplot(x='Subject', y='b0', hue='Mask', data=df.loc[(df.Model=='Interaction
 #ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
 
 # Customize the plot
-ax.set_title('b0 in Interaction'.format(subj), fontsize=16)
+ax.set_title('a2 in Interaction'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('b0', fontsize=12)
+ax.set_ylabel('a2', fontsize=12)
 
 # Adjust legend
 plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -251,7 +209,8 @@ plt.show()
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b1', hue='Mask', data=df.loc[(df.Model=='Interaction Full(w)')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='b1', hue='Mask', data=df.loc[(df.Model=='Relative')], palette='Set2', ax=ax)
+plt.errorbar(x='Subject', y ='b1', yerr = 'b1_s', color="k", fmt="none", data=df.loc[(df.Model=='Relative') & (df.Mask=='OFCmed')])
 
 # Customize the plot
 ax.set_title('b1 in Interaction'.format(subj), fontsize=16)
@@ -270,17 +229,17 @@ plt.show()
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='w_v', hue='Mask', data=df.loc[(df.Model=='Interaction Full(w)')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='b2', hue='Mask', data=df.loc[(df.Model=='Relative')], palette='Set2', ax=ax)
 #plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
-#plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="r", fmt="o", data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
+plt.errorbar(x='Subject', y ='b2', yerr = 'b2_s', color="k", fmt="none", data=df.loc[(df.Model=='Relative') & (df.Mask=='OFCmed')])
 
 #ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
 #ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
 
 # Customize the plot
-ax.set_title('w_v in Interaction'.format(subj), fontsize=16)
+ax.set_title('b2 in Interaction'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('w_v', fontsize=12)
+ax.set_ylabel('b2', fontsize=12)
 
 # Adjust legend
 plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -293,19 +252,26 @@ plt.show()
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b1+w_v', hue='Mask', data=df.loc[(df.Model=='Interaction Full(w)')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='b1+b2', hue='Mask', data=df.loc[(df.Model=='Relative')], palette='Set2', ax=ax)
 #plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
-#plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="r", fmt="o", data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
+plt.errorbar(x='Subject', y ='b1+b2', yerr = 'b1+b2_s', color="k", fmt="none", data=df.loc[(df.Model=='Relative') & (df.Mask=='OFCmed')])
+
 
 #ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
 #ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
 
 # Customize the plot
-ax.set_title('b1+wv in Interaction'.format(subj), fontsize=16)
+ax.set_title('b1+b2 in Interaction'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('b1+wv', fontsize=12)
+ax.set_ylabel('b1+b2', fontsize=12)
 
-abs(df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v'] / df.loc[(df.Model=='Interaction Full(w)')]['b1+w_v_s'] )>1.96
+abs(df.loc[(df.Model=='Relative')]['b1+b2'] / df.loc[(df.Model=='Relative')]['b1+b2_s'] )>1.96
+
+df.loc[(df.Model=='Interaction Full(w)')]['b1+b2'].mean()
+stats.ttest_1samp(df.loc[(df.Model=='Relative') & (df.Mask=='vmPFC')]['b1+b2'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Relative') & (df.Mask=='OFCmed')]['b1+b2'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Relative') & (df.Mask=='dmPFC')]['b1+b2'], popmean=0)
+    
 #ax.bar_label(ax.containers[0],labels={1,1,1,1,1,1,1,1,1})
 # for i in ax.containers:
 #     breakpoint()
@@ -318,7 +284,7 @@ plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
-(df['b1+w_v'] / df['b1+w_v_s'] )>1.96
+#test = (df['b1+w_v'] / df['b1+w_v_s'] )>1.96
 
 
 #w1 Divisive By Interaction across subjets
@@ -348,7 +314,7 @@ plt.show()
 # Set up the plot
 fig, ax = plt.subplots(figsize=(12, 6))
 #hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
-sns.barplot(x='Subject', y='b0', hue='Mask', data=df.loc[(df.Model=='Divisive by Cat Interaction (Diff Spec)')], palette='Set2', ax=ax)
+sns.barplot(x='Subject', y='a2', hue='Mask', data=df.loc[(df.Model=='Divisive by Cat Interaction (Diff Spec)')], palette='Set2', ax=ax)
 #plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
 #plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="r", fmt="o", data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
 
@@ -356,9 +322,9 @@ sns.barplot(x='Subject', y='b0', hue='Mask', data=df.loc[(df.Model=='Divisive by
 #ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
 
 # Customize the plot
-ax.set_title('b0 in Divisive by Cat Interaction'.format(subj), fontsize=16)
+ax.set_title('a2 in Divisive by Cat Interaction'.format(subj), fontsize=16)
 ax.set_xlabel('Subject', fontsize=12)
-ax.set_ylabel('b0', fontsize=12)
+ax.set_ylabel('a2', fontsize=12)
 
 # Adjust legend
 plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
@@ -391,3 +357,63 @@ plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 
+
+
+#w1 Divisive By Interaction across subjets
+# Set up the plot
+fig, ax = plt.subplots(figsize=(12, 6))
+#hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
+sns.barplot(x='Subject', y='w1', hue='Mask', data=df.loc[(df.Model=='Divisive by Interaction + V')], palette='Set2', ax=ax)
+#plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
+#plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="r", fmt="o", data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
+plt.errorbar(x='Subject', y ='w1', yerr = 'w1_s', color="k", fmt="none", data=df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='OFCmed')])
+
+#ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
+#ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
+
+# Customize the plot
+ax.set_title('w1 in Divisive by Interaction + V'.format(subj), fontsize=16)
+ax.set_xlabel('Subject', fontsize=12)
+ax.set_ylabel('w1', fontsize=12)
+
+# Adjust legend
+plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Adjust layout and display
+plt.tight_layout()
+plt.show()
+
+test=(abs(df.loc[(df.Model=='Divisive by Interaction + V')]['w1'] / df.loc[(df.Model=='Divisive by Interaction + V')]['w1_s'] )>1.96)
+
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='vmPFC')]['w1'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='OFCmed')]['w1'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='dmPFC')]['w1'], popmean=0)
+
+#w_v Divisive By Interaction across subjets
+# Set up the plot
+fig, ax = plt.subplots(figsize=(12, 6))
+#hue_order = ['Divisive by Cat', 'Sigma and w', 'Absolute']
+sns.barplot(x='Subject', y='w_v', hue='Mask', data=df.loc[(df.Model=='Divisive by Interaction + V')], palette='Set2', ax=ax)
+#plt.bar(x='Subject', height ='w1', data=df.loc[(df.Model=='Interaction Average(w)') & (df.Mask=='vmPFC')])
+plt.errorbar(x='Subject', y ='w_v', yerr = 'w_v_s', color="k", fmt="none", data=df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='OFCmed')])
+
+#ax.fill_between(x, lower1, upper1, color='b', alpha=0.2)
+#ax.fill_between(x, lower2, upper2, color='r', alpha=0.2)
+
+# Customize the plot
+ax.set_title('w_v in Divisive by Interaction + V'.format(subj), fontsize=16)
+ax.set_xlabel('Subject', fontsize=12)
+ax.set_ylabel('w_v', fontsize=12)
+
+# Adjust legend
+plt.legend(title='Mask', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Adjust layout and display
+plt.tight_layout()
+plt.show()
+
+test=(abs(df.loc[(df.Model=='Divisive by Interaction + V')]['w_v'] / df.loc[(df.Model=='Divisive by Interaction + V')]['w_v_s'] )>1.96)
+
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='vmPFC')]['w_v'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='OFCmed')]['w_v'], popmean=0)
+stats.ttest_1samp(df.loc[(df.Model=='Divisive by Interaction + V') & (df.Mask=='dmPFC')]['w_v'], popmean=0)
