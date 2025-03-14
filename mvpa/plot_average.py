@@ -16,8 +16,8 @@ import seaborn as sns
 from scipy import stats 
 from lmfit.model import load_modelresult
 
-bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
-#bundle_path = '/Users/locro/Documents/Bundle_Value/'
+#bundle_path = '/Users/ryanwebb/Documents/GitHub/Bundle_Value/'
+bundle_path = '/Users/locro/Documents/Bundle_Value/'
 
 #subj_list = ['104','105','106','107','108','109','110','111','112','113','114']
 
@@ -29,7 +29,8 @@ all_data = []
 for subj in subj_list:
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     # Define the path to the JSON file
-    results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
+    #results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_3_13_25.pkl')
     
     # Open and load the JSON file
     with open(results_file, 'rb') as f:

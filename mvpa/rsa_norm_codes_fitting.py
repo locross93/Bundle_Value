@@ -91,7 +91,8 @@ def nonlinear_rsa(info, params, temp_fmri, partial_dsms, abs_value, trial_type_i
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(info['subj']))
     
     # Save parameter fits and statistics
-    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    #with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_3_13_25-', info['model'], info['mask'],'.json'])), 'w') as f:
         result.params.dump(f)
         
     # Save model fit and statistics
@@ -180,7 +181,8 @@ def nonlinear_rsa_items(info, params, temp_fmri, partial_dsms, abs_value, btwn_d
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(info['subj']))
     
     # Save parameter fits and statistics for this model
-    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    #with open(os.path.join(subj_dir, "".join(['rsa_norm_results_2_07_24-', info['model'], info['mask'],'.json'])), 'w') as f:
+    with open(os.path.join(subj_dir, "".join(['rsa_norm_results_3_13_25-', info['model'], info['mask'],'.json'])), 'w') as f:
         result.params.dump(f)
         
     # Save model fit and statistics
@@ -228,7 +230,8 @@ def save_results(subj, results_dict, mask_names):
     subj_dir = os.path.join(bundle_path, 'mvpa', 'analyses', 'sub'+str(subj))
     
     # Save parameter fits and statistics
-    results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
+    #results_file = os.path.join(subj_dir, 'rsa_norm_results_2_07_24.pkl')
+    results_file = os.path.join(subj_dir, 'rsa_norm_results_3_13_25.pkl')
     with open(results_file, 'wb') as f:
         #json.dump(results_dict, f, indent=4)
         #save_modelresult(modelresult, fname)
